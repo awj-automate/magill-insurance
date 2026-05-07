@@ -37,7 +37,7 @@ export default function HomePage() {
           <ArchitectureDiagram />
         </div>
 
-        <div className="mt-10 flex flex-wrap items-center gap-x-12 gap-y-6 text-3xl font-semibold text-slate-800">
+        <div className="mt-10 flex flex-wrap items-center gap-x-12 gap-y-6 text-xl font-semibold text-slate-800">
           <Legend dot="bg-sky-500" label="Intake" />
           <Legend dot="bg-blue-600" label="Data from Airtable" />
           <Legend dot="bg-cyan-500" label="UI / dashboard reads" />
