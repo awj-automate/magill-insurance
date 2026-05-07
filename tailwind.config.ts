@@ -9,19 +9,11 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ["ui-sans-serif", "system-ui", "-apple-system", "Segoe UI", "Roboto", "Inter", "sans-serif"],
+        sans: ["var(--font-inter)", "ui-sans-serif", "system-ui", "sans-serif"],
         mono: ["ui-monospace", "SFMono-Regular", "Menlo", "monospace"],
       },
-      colors: {
-        ink: {
-          950: "#070912",
-          900: "#0c1020",
-          800: "#141a30",
-          700: "#1d2440",
-        },
-      },
       boxShadow: {
-        glow: "0 0 0 1px rgba(148,163,184,0.08), 0 8px 30px rgba(0,0,0,0.45)",
+        soft: "0 1px 0 rgba(15,23,42,0.04), 0 8px 24px rgba(15,23,42,0.06)",
       },
     },
   },

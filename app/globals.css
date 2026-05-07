@@ -5,37 +5,31 @@
 @import "@xyflow/react/dist/style.css";
 
 :root {
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 html, body {
-  background: #070912;
-  color: #e2e8f0;
+  background: #ffffff;
+  color: #0f172a;
 }
 
-/* React Flow tweaks for dark theme */
+/* React Flow tweaks for light theme */
 .react-flow__renderer { background: transparent; }
 .react-flow__background { background: transparent; }
 .react-flow__edge-path { stroke-width: 1.5; }
 .react-flow__handle { opacity: 0; }
-.react-flow__attribution { background: transparent; color: #475569; font-size: 10px; }
+.react-flow__attribution { background: transparent; color: #94a3b8; font-size: 10px; }
 .react-flow__controls {
-  background: rgba(20, 26, 48, 0.8);
-  border: 1px solid rgba(148, 163, 184, 0.15);
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
   border-radius: 8px;
   overflow: hidden;
-  backdrop-filter: blur(8px);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
 }
 .react-flow__controls-button {
   background: transparent;
-  color: #cbd5e1;
-  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+  color: #475569;
+  border-bottom: 1px solid #e2e8f0;
 }
-.react-flow__controls-button:hover { background: rgba(148, 163, 184, 0.08); }
-.react-flow__controls-button svg { fill: #cbd5e1; }
-
-/* Subtle grid background */
-.dotgrid {
-  background-image: radial-gradient(rgba(148, 163, 184, 0.10) 1px, transparent 1px);
-  background-size: 22px 22px;
-}
+.react-flow__controls-button:hover { background: #f1f5f9; }
+.react-flow__controls-button svg { fill: #475569; }
