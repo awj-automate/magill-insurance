@@ -9,19 +9,14 @@ export default function HomePage() {
     <main className="min-h-screen bg-white text-slate-900">
       {/* Top bar */}
       <div className="mx-auto flex max-w-[1400px] items-center justify-between gap-4 px-6 pt-6">
-        <div className="flex items-center gap-3">
-          <Image
-            src="/logo.png"
-            alt="Magill Livestock Insurance"
-            width={200}
-            height={56}
-            priority
-            className="h-12 w-auto"
-          />
-          <div className="hidden text-xs font-medium uppercase tracking-[0.18em] text-slate-500 sm:block">
-            Magill Livestock Insurance · Workflow Architecture
-          </div>
-        </div>
+        <Image
+          src="/logo.png"
+          alt="Magill Livestock Insurance"
+          width={200}
+          height={56}
+          priority
+          className="h-12 w-auto"
+        />
         <Link
           href="/dashboard"
           className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-slate-800"
@@ -42,7 +37,7 @@ export default function HomePage() {
           <ArchitectureDiagram />
         </div>
 
-        <div className="mt-6 grid grid-cols-2 gap-3 text-xs text-slate-600 md:grid-cols-4">
+        <div className="mt-10 flex flex-wrap items-center gap-x-12 gap-y-6 text-3xl font-semibold text-slate-800">
           <Legend dot="bg-sky-500" label="Intake" />
           <Legend dot="bg-blue-600" label="Data from Airtable" />
           <Legend dot="bg-cyan-500" label="UI / dashboard reads" />
@@ -55,8 +50,8 @@ export default function HomePage() {
 
 function Legend({ dot, label }: { dot: string; label: string }) {
   return (
-    <div className="flex items-center gap-2">
-      <span className={cn("h-2 w-2 rounded-full", dot)} />
+    <div className="flex items-center gap-4">
+      <span className={cn("h-5 w-5 flex-none rounded-full", dot)} />
       <span>{label}</span>
     </div>
   );

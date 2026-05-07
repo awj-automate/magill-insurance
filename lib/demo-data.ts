@@ -151,6 +151,9 @@ Reply with the signed app and we'll bind by EOD.
     summary:
       "Mid-term endorsement adding $15k of medical coverage to 'Tempest'. Renewal-style change, no UW concerns. Email + SMS sent, awaiting client confirmation.",
     conditions: [],
+    horsesList: [
+      { name: "Tempest", breed: "Warmblood", age: 9, value: 70000, conditions: "Mid-term endorsement: +$15k medical coverage", flag: "ok" },
+    ],
     drafts: {
       email: `Subject: Wexler · Tempest endorsement confirmation\n\nHi Anna, the $15k medical endorsement to Tempest's policy is confirmed effective 2026-05-05. New annual premium $5,420 (prorated $87 due now). Confirm receipt and we're set. — Mike`,
       sms: `Anna — Tempest medical bump confirmed. $87 prorated, new annual $5,420. Confirm receipt please. — Mike`,
@@ -178,6 +181,12 @@ Reply with the signed app and we'll bind by EOD.
     summary:
       "4-horse new business app. One horse (Cinder) has a prior insurer non-renewal that wasn't disclosed in the 'prior coverage' section.",
     conditions: ["Cinder (QH, 13): prior carrier non-renewal 2024 not disclosed — request clarification before binding"],
+    horsesList: [
+      { name: "Cinder", breed: "Quarter Horse", age: 13, value: 22000, conditions: "Prior carrier non-renewal 2024 — undisclosed", flag: "review" },
+      { name: "Juniper", breed: "Paint", age: 7, value: 18000, conditions: "Clear", flag: "ok" },
+      { name: "Sage", breed: "Mustang", age: 10, value: 15000, conditions: "Clear", flag: "ok" },
+      { name: "Dakota", breed: "Quarter Horse", age: 8, value: 24000, conditions: "Clear", flag: "ok" },
+    ],
     drafts: {
       email: `Subject: Painted Sky Ranch · Quick clarification needed\n\nHi Marcus, before we move forward — our records show Cinder had a prior carrier non-renewal in 2024. Could you confirm whether that was on this horse and share any context? Once cleared we can quote the full schedule. — Mike`,
       sms: `Marcus — quick Q before we quote: any context on Cinder's 2024 non-renewal with the prior carrier? Need that before binding. — Mike`,
@@ -207,6 +216,22 @@ Reply with the signed app and we'll bind by EOD.
       "New on schedule: 'Inkwell' and 'Halftime' — confirm whether additions or replacements",
       "One horse from prior bound ('Tidewater') not on this submission — sold? deceased? request status",
     ],
+    horsesList: [
+      { name: "Inkwell", breed: "Polo Pony", age: 9, value: 45000, conditions: "NEW on schedule — confirm addition vs. replacement", flag: "review" },
+      { name: "Halftime", breed: "Polo Pony", age: 8, value: 50000, conditions: "NEW on schedule — confirm addition vs. replacement", flag: "review" },
+      { name: "Brisbane", breed: "Polo Pony", age: 10, value: 38000, conditions: "Clear", flag: "ok" },
+      { name: "Calypso", breed: "Polo Pony", age: 11, value: 35000, conditions: "Clear", flag: "ok" },
+      { name: "Domino", breed: "Polo Pony", age: 9, value: 42000, conditions: "Clear", flag: "ok" },
+      { name: "Echo", breed: "Polo Pony", age: 8, value: 40000, conditions: "Clear", flag: "ok" },
+      { name: "Falcon", breed: "Polo Pony", age: 12, value: 32000, conditions: "Clear", flag: "ok" },
+      { name: "Ginger", breed: "Polo Pony", age: 10, value: 36000, conditions: "Clear", flag: "ok" },
+      { name: "Harlow", breed: "Polo Pony", age: 11, value: 33000, conditions: "Clear", flag: "ok" },
+      { name: "Indigo", breed: "Polo Pony", age: 9, value: 41000, conditions: "Clear", flag: "ok" },
+      { name: "Jasper", breed: "Polo Pony", age: 8, value: 44000, conditions: "Clear", flag: "ok" },
+      { name: "Kingston", breed: "Polo Pony", age: 11, value: 37000, conditions: "Clear", flag: "ok" },
+      { name: "Latitude", breed: "Polo Pony", age: 10, value: 39000, conditions: "Clear", flag: "ok" },
+      { name: "Marquee", breed: "Polo Pony", age: 9, value: 43000, conditions: "Clear", flag: "ok" },
+    ],
     drafts: {
       email: `Subject: Highbridge · Renewal — quick reconciliation\n\nHi Eve, comparing this renewal to the bound 2025 schedule, we have two new horses (Inkwell, Halftime) and one missing (Tidewater). Could you confirm whether the new horses are additions or replacements, and the status of Tidewater? — Mike`,
       sms: `Eve — renewal reconciliation: 2 new (Inkwell, Halftime), 1 missing (Tidewater). Additions or replacements? Tidewater status? — Mike`,
@@ -233,6 +258,9 @@ Reply with the signed app and we'll bind by EOD.
     flagCount: 0,
     summary: "Address change endorsement — handed off to AMS360 (system of record).",
     conditions: [],
+    horsesList: [
+      { name: "Sunburst", breed: "Quarter Horse", age: 8, value: 18000, conditions: "Schedule unchanged — address-update endorsement (policy-level)", flag: "ok" },
+    ],
     drafts: { email: "", sms: "" },
     audit: [
       { ts: "2026-05-04 12:30:05", actor: "Webhook", event: "Submission received", level: "info" },

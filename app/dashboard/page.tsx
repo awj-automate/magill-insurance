@@ -5,11 +5,8 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import {
   ArrowLeft,
-  ArrowUpRight,
-  Bell,
   ClipboardCheck,
   Cog,
-  Filter,
   Inbox,
   LayoutDashboard,
   Mail,
@@ -20,10 +17,15 @@ import {
   Send,
   Sparkles,
 } from "lucide-react";
-import { applications, type AppStatus, type Application } from "@/lib/demo-data";
+import {
+  applications as baseApplications,
+  type AppStatus,
+  type Application,
+} from "@/lib/demo-data";
 import { cn } from "@/lib/cn";
 
 type View = "pipeline" | "new-business" | "renewals" | "change-forms" | "audit" | "prompts" | "settings";
+type DetailTab = "overview" | "horses" | "drafts" | "audit";
 
 const navItems: { key: View; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
   { key: "pipeline", label: "Pipeline", icon: LayoutDashboard },
@@ -63,22 +65,43 @@ const viewMeta: Record<View, { title: string; subtitle: string }> = {
   settings: { title: "Settings", subtitle: "Team, integrations, and notification preferences." },
 };
 
-function applicationsForView(view: View): Application[] {
-  if (view === "new-business") return applications.filter((a) => a.type === "New Business");
-  if (view === "renewals") return applications.filter((a) => a.type === "Renewal");
-  if (view === "change-forms") return applications.filter((a) => a.type === "Change Form");
-  return applications;
+function applicationsForView(view: View, apps: Application[]): Application[] {
+  if (view === "new-business") return apps.filter((a) => a.type === "New Business");
+  if (view === "renewals") return apps.filter((a) => a.type === "Renewal");
+  if (view === "change-forms") return apps.filter((a) => a.type === "Change Form");
+  return apps;
 }
 
 export default function DashboardPage() {
   const [view, setView] = useState<View>("pipeline");
-  const [selectedId, setSelectedId] = useState<string>(applications[0].id);
+  const [statusOverrides, setStatusOverrides] = useState<Record<string, AppStatus>>({});
+  const [draftOverrides, setDraftOverrides] = useState<Record<string, { email?: string; sms?: string }>>({});
+  const [selectedId, setSelectedId] = useState<string>(baseApplications[0].id);
   const [filter, setFilter] = useState<FilterKey>("all");
   const [query, setQuery] = useState("");
 
-  const isListView = view === "pipeline" || view === "new-business" || view === "renewals" || view === "change-forms";
+  const apps = useMemo<Application[]>(
+    () =>
+      baseApplications.map((a) => ({
+        ...a,
+        status: statusOverrides[a.id] ?? a.status,
+        drafts: {
+          email: draftOverrides[a.id]?.email ?? a.drafts.email,
+          sms: draftOverrides[a.id]?.sms ?? a.drafts.sms,
+        },
+      })),
+    [statusOverrides, draftOverrides],
+  );
 
-  const viewApps = useMemo(() => applicationsForView(view), [view]);
+  const onUpdateStatus = (id: string, next: AppStatus) =>
+    setStatusOverrides((p) => ({ ...p, [id]: next }));
+  const onUpdateDraft = (id: string, field: "email" | "sms", value: string) =>
+    setDraftOverrides((p) => ({ ...p, [id]: { ...p[id], [field]: value } }));
+
+  const isListView =
+    view === "pipeline" || view === "new-business" || view === "renewals" || view === "change-forms";
+
+  const viewApps = useMemo(() => applicationsForView(view, apps), [view, apps]);
 
   const filtered = useMemo(() => {
     return viewApps.filter((a) => {
@@ -126,26 +149,15 @@ export default function DashboardPage() {
               onClick={() => setView(item.key)}
             >
               {item.label}
-              {item.key === "pipeline" ? (
-                <span className="ml-auto rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-700">
-                  {applications.filter((a) => ["flagged", "review"].includes(a.status)).length}
-                </span>
-              ) : null}
             </NavItem>
           ))}
         </nav>
-        <div className="border-t border-slate-200 px-3 py-3">
-          <div className="rounded-lg bg-slate-50 px-3 py-2.5 ring-1 ring-slate-200">
-            <div className="text-xs font-semibold text-slate-900">Mike Magill</div>
-            <div className="text-[11px] text-slate-500">Owner · Two-seat license</div>
-          </div>
-        </div>
       </aside>
 
       {/* Main column */}
       <div className="flex min-w-0 flex-1 flex-col">
         {/* Top bar */}
-        <header className="flex items-center justify-between gap-4 border-b border-slate-200 bg-white px-6 py-3.5">
+        <header className="flex items-center gap-4 border-b border-slate-200 bg-white px-6 py-3.5">
           <Link
             href="/"
             className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 transition hover:text-slate-900"
@@ -165,15 +177,6 @@ export default function DashboardPage() {
               />
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <button className="relative inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:text-slate-900">
-              <Bell className="h-4 w-4" />
-              <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-rose-500" />
-            </button>
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-900 text-xs font-semibold text-white">
-              MM
-            </div>
-          </div>
         </header>
 
         {/* Body */}
@@ -187,9 +190,11 @@ export default function DashboardPage() {
             selected={selected}
             selectedId={selectedId}
             setSelectedId={setSelectedId}
+            onUpdateStatus={onUpdateStatus}
+            onUpdateDraft={onUpdateDraft}
           />
         ) : view === "audit" ? (
-          <AuditView />
+          <AuditView apps={apps} />
         ) : view === "prompts" ? (
           <PromptsView />
         ) : (
@@ -247,29 +252,28 @@ function ListAndDetail({
   selected,
   selectedId,
   setSelectedId,
+  onUpdateStatus,
+  onUpdateDraft,
 }: {
   view: View;
   applications: Application[];
   filtered: Application[];
   filter: FilterKey;
   setFilter: (f: FilterKey) => void;
-  selected: Application;
+  selected: Application | undefined;
   selectedId: string;
   setSelectedId: (id: string) => void;
+  onUpdateStatus: (id: string, next: AppStatus) => void;
+  onUpdateDraft: (id: string, field: "email" | "sms", value: string) => void;
 }) {
   const meta = viewMeta[view];
 
   return (
     <div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[420px_1fr]">
       <div className="flex min-h-0 flex-col border-r border-slate-200 bg-white">
-        <div className="flex items-center justify-between border-b border-slate-200 px-5 py-3">
-          <div>
-            <div className="text-sm font-semibold text-slate-900">{meta.title}</div>
-            <div className="text-[11px] text-slate-500">{filtered.length} of {viewApps.length} applications</div>
-          </div>
-          <button className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 px-2 py-1 text-[11px] font-medium text-slate-600 transition hover:border-slate-300 hover:text-slate-900">
-            <Filter className="h-3 w-3" /> Sort
-          </button>
+        <div className="border-b border-slate-200 px-5 py-3">
+          <div className="text-sm font-semibold text-slate-900">{meta.title}</div>
+          <div className="text-[11px] text-slate-500">{filtered.length} of {viewApps.length} applications</div>
         </div>
         <div className="flex flex-wrap gap-1.5 border-b border-slate-200 px-5 py-2.5">
           {filters.map((f) => (
@@ -318,7 +322,11 @@ function ListAndDetail({
         </div>
       </div>
 
-      {selected ? <DetailPane app={selected} /> : <EmptyDetail />}
+      {selected ? (
+        <DetailPane app={selected} onUpdateStatus={onUpdateStatus} onUpdateDraft={onUpdateDraft} />
+      ) : (
+        <EmptyDetail />
+      )}
     </div>
   );
 }
@@ -331,8 +339,16 @@ function EmptyDetail() {
   );
 }
 
-function DetailPane({ app }: { app: Application }) {
-  const [tab, setTab] = useState<"overview" | "horses" | "drafts" | "audit">("overview");
+function DetailPane({
+  app,
+  onUpdateStatus,
+  onUpdateDraft,
+}: {
+  app: Application;
+  onUpdateStatus: (id: string, next: AppStatus) => void;
+  onUpdateDraft: (id: string, field: "email" | "sms", value: string) => void;
+}) {
+  const [tab, setTab] = useState<DetailTab>("overview");
   return (
     <div className="flex min-h-0 flex-col bg-slate-50">
       <div className="border-b border-slate-200 bg-white px-7 py-5">
@@ -394,9 +410,13 @@ function DetailPane({ app }: { app: Application }) {
       </div>
 
       <div className="flex-1 overflow-auto px-7 py-6">
-        {tab === "overview" ? <OverviewTab app={app} /> : null}
+        {tab === "overview" ? (
+          <OverviewTab app={app} onSwitchTab={setTab} onUpdateStatus={onUpdateStatus} />
+        ) : null}
         {tab === "horses" ? <HorsesTab app={app} /> : null}
-        {tab === "drafts" ? <DraftsTab app={app} /> : null}
+        {tab === "drafts" ? (
+          <DraftsTab app={app} onUpdateStatus={onUpdateStatus} onUpdateDraft={onUpdateDraft} />
+        ) : null}
         {tab === "audit" ? <AuditTab app={app} /> : null}
       </div>
     </div>
@@ -412,7 +432,15 @@ function Stat({ label, value }: { label: string; value: string }) {
   );
 }
 
-function OverviewTab({ app }: { app: Application }) {
+function OverviewTab({
+  app,
+  onSwitchTab,
+  onUpdateStatus,
+}: {
+  app: Application;
+  onSwitchTab: (t: DetailTab) => void;
+  onUpdateStatus: (id: string, next: AppStatus) => void;
+}) {
   return (
     <div className="grid gap-5 md:grid-cols-3">
       <div className="md:col-span-2 space-y-5">
@@ -433,27 +461,7 @@ function OverviewTab({ app }: { app: Application }) {
         </Card>
 
         <Card title="Suggested next action">
-          <div className="flex flex-wrap items-center gap-3">
-            {app.status === "flagged" || app.status === "review" ? (
-              <>
-                <ActionButton primary>Approve drafts &amp; send</ActionButton>
-                <ActionButton>Edit AI drafts</ActionButton>
-                <ActionButton>Add internal note</ActionButton>
-              </>
-            ) : app.status === "approved" ? (
-              <>
-                <ActionButton primary icon={<Send className="h-3.5 w-3.5" />}>Send email + SMS</ActionButton>
-                <ActionButton>Edit before send</ActionButton>
-              </>
-            ) : app.status === "sent" ? (
-              <>
-                <ActionButton>View thread</ActionButton>
-                <ActionButton>Mark as bound</ActionButton>
-              </>
-            ) : (
-              <ActionButton icon={<ArrowUpRight className="h-3.5 w-3.5" />}>Open in AMS360 thread</ActionButton>
-            )}
-          </div>
+          <NextActions app={app} onSwitchTab={onSwitchTab} onUpdateStatus={onUpdateStatus} />
           <p className="mt-3 text-[12px] text-slate-500">
             Every send action records to the audit log with operator, timestamp, and the exact draft body.
           </p>
@@ -499,14 +507,53 @@ function OverviewTab({ app }: { app: Application }) {
   );
 }
 
-function HorsesTab({ app }: { app: Application }) {
-  if (!app.horsesList || app.horsesList.length === 0) {
+function NextActions({
+  app,
+  onSwitchTab,
+  onUpdateStatus,
+}: {
+  app: Application;
+  onSwitchTab: (t: DetailTab) => void;
+  onUpdateStatus: (id: string, next: AppStatus) => void;
+}) {
+  if (app.status === "flagged" || app.status === "review") {
     return (
-      <div className="rounded-lg border border-slate-200 bg-white p-6 text-sm text-slate-500">
-        No per-horse breakdown for this submission.
+      <div className="flex flex-wrap items-center gap-3">
+        <ActionButton primary icon={<Send className="h-3.5 w-3.5" />} onClick={() => onUpdateStatus(app.id, "sent")}>
+          Approve drafts &amp; send
+        </ActionButton>
+        <ActionButton onClick={() => onSwitchTab("drafts")}>Edit AI drafts</ActionButton>
       </div>
     );
   }
+  if (app.status === "approved" || app.status === "new") {
+    return (
+      <div className="flex flex-wrap items-center gap-3">
+        <ActionButton primary icon={<Send className="h-3.5 w-3.5" />} onClick={() => onUpdateStatus(app.id, "sent")}>
+          Send email + SMS
+        </ActionButton>
+        <ActionButton onClick={() => onSwitchTab("drafts")}>Edit before send</ActionButton>
+      </div>
+    );
+  }
+  if (app.status === "sent") {
+    return (
+      <div className="flex flex-wrap items-center gap-3">
+        <ActionButton primary onClick={() => onUpdateStatus(app.id, "bound")}>
+          Mark as bound
+        </ActionButton>
+      </div>
+    );
+  }
+  return (
+    <div className="text-[13px] text-slate-600">
+      Bound — managed in AMS360. No further action in this system.
+    </div>
+  );
+}
+
+function HorsesTab({ app }: { app: Application }) {
+  const list = app.horsesList ?? [];
   return (
     <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
       <table className="w-full text-left text-sm">
@@ -521,7 +568,7 @@ function HorsesTab({ app }: { app: Application }) {
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-100">
-          {app.horsesList.map((h) => (
+          {list.map((h) => (
             <tr key={h.name}>
               <td className="px-4 py-3 font-semibold text-slate-900">{h.name}</td>
               <td className="px-4 py-3 text-slate-700">{h.breed}</td>
@@ -554,37 +601,102 @@ function HorsesTab({ app }: { app: Application }) {
   );
 }
 
-function DraftsTab({ app }: { app: Application }) {
+function DraftsTab({
+  app,
+  onUpdateStatus,
+  onUpdateDraft,
+}: {
+  app: Application;
+  onUpdateStatus: (id: string, next: AppStatus) => void;
+  onUpdateDraft: (id: string, field: "email" | "sms", value: string) => void;
+}) {
   return (
     <div className="grid gap-5 md:grid-cols-2">
-      <Card
+      <DraftCard
         title="Email draft"
         icon={<Mail className="h-4 w-4 text-slate-500" />}
-        action={
-          <div className="flex gap-2">
-            <ActionButton compact>Edit</ActionButton>
-            <ActionButton compact primary icon={<Send className="h-3 w-3" />}>Send</ActionButton>
-          </div>
-        }
-      >
-        <pre className="whitespace-pre-wrap rounded-md border border-slate-200 bg-slate-50 p-4 text-[12.5px] leading-relaxed text-slate-800 font-mono">
-          {app.drafts.email || "(no email draft for this record)"}
-        </pre>
-      </Card>
-      <Card
+        body={app.drafts.email}
+        emptyLabel="No email draft for this record."
+        onSave={(v) => onUpdateDraft(app.id, "email", v)}
+        onSend={() => onUpdateStatus(app.id, "sent")}
+      />
+      <DraftCard
         title="SMS draft"
         icon={<MessageSquare className="h-4 w-4 text-slate-500" />}
-        action={
-          <div className="flex gap-2">
-            <ActionButton compact>Edit</ActionButton>
-            <ActionButton compact primary icon={<Send className="h-3 w-3" />}>Send</ActionButton>
-          </div>
-        }
-      >
+        body={app.drafts.sms}
+        emptyLabel="No SMS draft for this record."
+        onSave={(v) => onUpdateDraft(app.id, "sms", v)}
+        onSend={() => onUpdateStatus(app.id, "sent")}
+      />
+    </div>
+  );
+}
+
+function DraftCard({
+  title,
+  icon,
+  body,
+  emptyLabel,
+  onSave,
+  onSend,
+}: {
+  title: string;
+  icon: React.ReactNode;
+  body: string;
+  emptyLabel: string;
+  onSave: (v: string) => void;
+  onSend: () => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(body);
+
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white p-5">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2 text-sm font-semibold text-slate-900">
+          {icon}
+          {title}
+        </div>
+        <div className="flex gap-2">
+          {editing ? (
+            <>
+              <ActionButton compact onClick={() => { setDraft(body); setEditing(false); }}>
+                Cancel
+              </ActionButton>
+              <ActionButton
+                compact
+                primary
+                onClick={() => {
+                  onSave(draft);
+                  setEditing(false);
+                }}
+              >
+                Save
+              </ActionButton>
+            </>
+          ) : (
+            <>
+              <ActionButton compact onClick={() => { setDraft(body); setEditing(true); }} disabled={!body}>
+                Edit
+              </ActionButton>
+              <ActionButton compact primary icon={<Send className="h-3 w-3" />} onClick={onSend} disabled={!body}>
+                Send
+              </ActionButton>
+            </>
+          )}
+        </div>
+      </div>
+      {editing ? (
+        <textarea
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          className="block w-full min-h-[260px] resize-y rounded-md border border-slate-300 bg-white p-4 text-[12.5px] leading-relaxed text-slate-800 font-mono outline-none focus:border-slate-500"
+        />
+      ) : (
         <pre className="whitespace-pre-wrap rounded-md border border-slate-200 bg-slate-50 p-4 text-[12.5px] leading-relaxed text-slate-800 font-mono">
-          {app.drafts.sms || "(no SMS draft for this record)"}
+          {body || `(${emptyLabel})`}
         </pre>
-      </Card>
+      )}
     </div>
   );
 }
@@ -647,18 +759,25 @@ function ActionButton({
   primary,
   compact,
   icon,
+  onClick,
+  disabled,
 }: {
   children: React.ReactNode;
   primary?: boolean;
   compact?: boolean;
   icon?: React.ReactNode;
+  onClick?: () => void;
+  disabled?: boolean;
 }) {
   return (
     <button
       type="button"
+      onClick={onClick}
+      disabled={disabled}
       className={cn(
         "inline-flex items-center gap-1.5 rounded-md font-semibold transition",
         compact ? "px-2 py-1 text-[11px]" : "px-3 py-1.5 text-[12px]",
+        disabled && "cursor-not-allowed opacity-50",
         primary
           ? "bg-slate-900 text-white hover:bg-slate-800"
           : "border border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50",
@@ -670,9 +789,9 @@ function ActionButton({
   );
 }
 
-function AuditView() {
+function AuditView({ apps }: { apps: Application[] }) {
   const allEntries = useMemo(() => {
-    return applications
+    return apps
       .flatMap((a) =>
         a.audit.map((e) => ({
           ...e,
@@ -682,7 +801,7 @@ function AuditView() {
         })),
       )
       .sort((a, b) => (a.ts < b.ts ? 1 : -1));
-  }, []);
+  }, [apps]);
 
   return (
     <div className="flex-1 overflow-auto bg-slate-50 px-7 py-6">
@@ -767,23 +886,7 @@ function PromptsView() {
         </header>
         <div className="space-y-6">
           {sections.map((s) => (
-            <section key={s.title} className="rounded-xl border border-slate-200 bg-white">
-              <div className="border-b border-slate-200 px-5 py-4">
-                <h2 className="text-sm font-semibold text-slate-900">{s.title}</h2>
-                <p className="mt-1 text-[12px] text-slate-500">{s.description}</p>
-              </div>
-              <ul className="divide-y divide-slate-100">
-                {s.items.map((item) => (
-                  <li key={item.name} className="flex items-center justify-between gap-3 px-5 py-3">
-                    <div className="min-w-0">
-                      <div className="font-mono text-[12px] text-slate-500">{item.name}</div>
-                      <div className="text-[13px] text-slate-800">{item.preview}</div>
-                    </div>
-                    <ActionButton compact>Edit</ActionButton>
-                  </li>
-                ))}
-              </ul>
-            </section>
+            <PromptSection key={s.title} title={s.title} description={s.description} items={s.items} />
           ))}
         </div>
       </div>
@@ -791,7 +894,84 @@ function PromptsView() {
   );
 }
 
+function PromptSection({
+  title,
+  description,
+  items,
+}: {
+  title: string;
+  description: string;
+  items: { name: string; preview: string }[];
+}) {
+  const [editing, setEditing] = useState<string | null>(null);
+  const [drafts, setDrafts] = useState<Record<string, string>>(() =>
+    Object.fromEntries(items.map((i) => [i.name, i.preview])),
+  );
+
+  return (
+    <section className="rounded-xl border border-slate-200 bg-white">
+      <div className="border-b border-slate-200 px-5 py-4">
+        <h2 className="text-sm font-semibold text-slate-900">{title}</h2>
+        <p className="mt-1 text-[12px] text-slate-500">{description}</p>
+      </div>
+      <ul className="divide-y divide-slate-100">
+        {items.map((item) => {
+          const isEditing = editing === item.name;
+          return (
+            <li key={item.name} className="px-5 py-3">
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <div className="font-mono text-[12px] text-slate-500">{item.name}</div>
+                  {isEditing ? (
+                    <textarea
+                      value={drafts[item.name]}
+                      onChange={(e) => setDrafts((p) => ({ ...p, [item.name]: e.target.value }))}
+                      className="mt-1 block w-full min-h-[80px] resize-y rounded-md border border-slate-300 bg-white p-2 text-[13px] text-slate-800 outline-none focus:border-slate-500"
+                    />
+                  ) : (
+                    <div className="text-[13px] text-slate-800">{drafts[item.name]}</div>
+                  )}
+                </div>
+                <div className="flex flex-none gap-2">
+                  {isEditing ? (
+                    <>
+                      <ActionButton
+                        compact
+                        onClick={() => {
+                          setDrafts((p) => ({ ...p, [item.name]: item.preview }));
+                          setEditing(null);
+                        }}
+                      >
+                        Cancel
+                      </ActionButton>
+                      <ActionButton compact primary onClick={() => setEditing(null)}>
+                        Save
+                      </ActionButton>
+                    </>
+                  ) : (
+                    <ActionButton compact onClick={() => setEditing(item.name)}>
+                      Edit
+                    </ActionButton>
+                  )}
+                </div>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
+}
+
 function SettingsView() {
+  const [notifs, setNotifs] = useState<Record<string, boolean>>({
+    "high-priority-flag": true,
+    "auto-reclassified": true,
+    "ai-low-confidence": true,
+    "daily-digest": false,
+  });
+  const toggle = (k: string) => setNotifs((p) => ({ ...p, [k]: !p[k] }));
+
   return (
     <div className="flex-1 overflow-auto bg-slate-50 px-7 py-6">
       <div className="mx-auto max-w-3xl space-y-6">
@@ -832,10 +1012,10 @@ function SettingsView() {
             <p className="mt-1 text-[12px] text-slate-500">Email or SMS me when these events fire.</p>
           </div>
           <ul className="divide-y divide-slate-100">
-            <NotifRow label="High-priority flag (UW review)" enabled />
-            <NotifRow label="Auto-reclassified submission" enabled />
-            <NotifRow label="AI low-confidence routed to review" enabled />
-            <NotifRow label="Daily pipeline digest" enabled={false} />
+            <NotifRow label="High-priority flag (UW review)" enabled={notifs["high-priority-flag"]} onToggle={() => toggle("high-priority-flag")} />
+            <NotifRow label="Auto-reclassified submission" enabled={notifs["auto-reclassified"]} onToggle={() => toggle("auto-reclassified")} />
+            <NotifRow label="AI low-confidence routed to review" enabled={notifs["ai-low-confidence"]} onToggle={() => toggle("ai-low-confidence")} />
+            <NotifRow label="Daily pipeline digest" enabled={notifs["daily-digest"]} onToggle={() => toggle("daily-digest")} />
           </ul>
         </section>
       </div>
@@ -845,12 +1025,9 @@ function SettingsView() {
 
 function SettingsRow({ name, role, email }: { name: string; role: string; email: string }) {
   return (
-    <li className="flex items-center justify-between gap-3 px-5 py-3">
-      <div className="min-w-0">
-        <div className="text-[13.5px] font-semibold text-slate-900">{name}</div>
-        <div className="text-[12px] text-slate-500">{role} · {email}</div>
-      </div>
-      <ActionButton compact>Manage</ActionButton>
+    <li className="px-5 py-3">
+      <div className="text-[13.5px] font-semibold text-slate-900">{name}</div>
+      <div className="text-[12px] text-slate-500">{role} · {email}</div>
     </li>
   );
 }
@@ -877,15 +1054,26 @@ function IntegrationRow({ name, detail, status }: { name: string; detail: string
   );
 }
 
-function NotifRow({ label, enabled }: { label: string; enabled: boolean }) {
+function NotifRow({
+  label,
+  enabled,
+  onToggle,
+}: {
+  label: string;
+  enabled: boolean;
+  onToggle: () => void;
+}) {
   return (
     <li className="flex items-center justify-between gap-3 px-5 py-3">
       <div className="text-[13.5px] text-slate-800">{label}</div>
-      <span
+      <button
+        type="button"
+        onClick={onToggle}
         className={cn(
           "inline-flex h-5 w-9 items-center rounded-full p-0.5 transition",
           enabled ? "bg-slate-900" : "bg-slate-200",
         )}
+        aria-pressed={enabled}
       >
         <span
           className={cn(
@@ -893,7 +1081,7 @@ function NotifRow({ label, enabled }: { label: string; enabled: boolean }) {
             enabled ? "translate-x-4" : "translate-x-0",
           )}
         />
-      </span>
+      </button>
     </li>
   );
 }

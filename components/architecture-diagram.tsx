@@ -225,7 +225,7 @@ export function ArchitectureDiagram() {
   const [edges, , onEdgesChange] = useEdgesState<Edge>(initialEdges);
 
   return (
-    <div className="h-[680px] w-full overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 shadow-soft">
+    <div className="h-[680px] w-full overflow-hidden rounded-2xl border border-slate-300 bg-slate-100 shadow-soft">
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -250,7 +250,7 @@ export function ArchitectureDiagram() {
           variant={BackgroundVariant.Dots}
           gap={22}
           size={1}
-          color="rgba(15,23,42,0.08)"
+          color="rgba(15,23,42,0.14)"
         />
         <Controls showInteractive={false} className="!bottom-4 !left-4" />
       </ReactFlow>
